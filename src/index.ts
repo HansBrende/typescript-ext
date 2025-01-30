@@ -1,3 +1,3 @@
-export default function add(x: number, y: number) {
-    return x + y;
-}
+
+export type {Zig, Zag} from './testing.js';
+export type {Incr, Decr} from './incr/index.js';
