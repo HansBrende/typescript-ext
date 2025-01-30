@@ -1,0 +1,30 @@
+{
+  "name": "typescript-ext",
+  "version": "0.1.0",
+  "main": "./dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc --removeComments && tsc --declaration --emitDeclarationOnly"
+  },
+  "keywords": [],
+  "author": "Hans Brende",
+  "license": "ISC",
+  "description": "",
+  "files": [
+    "/dist"
+  ],
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}
