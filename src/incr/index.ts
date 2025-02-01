@@ -15,7 +15,33 @@ type N02 = `-${U02}`
 type N08 = `-${U08}`
 type N16 = `-${U16}`
 
-export type Incr<X extends `${bigint}`> =
+type Hexed = `${bigint}` | `0x${`${bigint}` & U16}`
+type Octed = `${bigint}` | `0o${`${bigint}` & U08}`
+type Bined = `${bigint}` | `0b${`${bigint}` & U02}`
+
+type Exponential = `${string}e${string}`
+type UnsignedInfinityString = 'Infinity'
+type PositiveInfinityString = UnsignedInfinityString | `+${UnsignedInfinityString}`
+type NegativeInfinityString = `-${UnsignedInfinityString}`
+type PositiveInfinity = 1e999
+type NegativeInfinity = -1e999
+
+type ToBigInt<X extends `${bigint}`> = X extends `${infer N extends bigint}` ? N : bigint
+type ToNumber<X extends string> = X extends `${infer N extends number}` ? N : number
+
+
+type StrDecimalLiteralToNumber<X extends string> =
+    // TODO:
+    // https://tc39.es/ecma262/multipage/abstract-operations.html#prod-StrDecimalLiteral
+    // spaces & empty string will be disallowed in a future version of typescript,
+    // c.f. https://github.com/microsoft/TypeScript/issues/46109
+    X extends `${infer N extends number}` ? N :
+    X extends PositiveInfinityString ? PositiveInfinity :
+    X extends NegativeInfinityString ? NegativeInfinity :
+    number
+
+
+type _IncrIntString<X extends `${bigint}`> =
     X extends `-${infer U}` ?
         U extends U16 ? IncrN16<U> :
         U extends U02 ? IncrN02<U> :
@@ -26,7 +52,45 @@ export type Incr<X extends `${bigint}`> =
     X extends U08 ? IncrU08<X> :
     IncrU10<X>
 
-export type Decr<X extends `${bigint}`> =
+type _IncrIntString10<X extends string> =
+    X extends `-${infer U}` ?
+        IncrN10<U> :
+    IncrU10<X>
+
+type _Incr<X extends `${number}` | UnsignedInfinityString | NegativeInfinityString> =
+    X extends `${bigint}` ? ToNumber<_IncrIntString10<X>> :
+    X extends `${infer L}.${infer R}` ? R extends Exponential ? number : ToNumber<`${_IncrIntString10<L>}.${R}`> :
+    X extends UnsignedInfinityString ? PositiveInfinity :
+    X extends NegativeInfinityString ? NegativeInfinity :
+    number
+
+export type Incr<X extends number> = _Incr<`${X}`>
+
+export namespace Incr {
+    export type Int<X extends bigint> = ToBigInt<_IncrIntString10<`${X}`>>
+
+    export type Str<X extends `${number | bigint}`> =
+        X extends `${bigint}` ? _IncrIntString<X> : `${Incr<StrDecimalLiteralToNumber<X>>}`
+
+    export type Hex<X extends string> =
+        X extends `-${infer U}` ?
+            `0x${U}` extends Hexed ? IncrN16<U> : string :
+        `0x${X}` extends Hexed ? IncrU16<X> : string
+
+    export type Oct<X extends string> =
+        X extends `-${infer U}` ?
+            `0o${U}` extends Octed ? IncrN08<U> : string :
+        `0o${X}` extends Octed ? IncrU08<X> : string
+
+    export type Bin<X extends string> =
+        X extends `-${infer U}` ?
+            `0b${U}` extends Bined ? IncrN02<U> : string :
+        `0b${X}` extends Bined ? IncrU02<X> : string
+}
+
+
+
+type _DecrIntString<X extends `${bigint}`> =
     X extends `-${string}` ?
         X extends N16 ? IncrU16<X> :
         X extends N02 ? IncrU02<X> :
@@ -37,8 +101,50 @@ export type Decr<X extends `${bigint}`> =
     X extends U08 ? DecrU08<X> :
     DecrU10<X>
 
+type _DecrIntString10<X extends string> =
+    X extends `-${string}` ?
+        IncrU10<X> :
+    DecrU10<X>
 
-type Inc<Prev extends Decr<N> & Int, N extends Int, Next extends Incr<N> & Int> = Is<Decr<N>, Prev> & Is<Incr<N>, Next>
+type _Decr<X extends `${number}` | UnsignedInfinityString | NegativeInfinityString> =
+    X extends `${bigint}` ? ToNumber<_DecrIntString10<X>> :
+    X extends `${infer L}.${infer R}` ? R extends Exponential ? number : ToNumber<`${_DecrIntString10<L>}.${R}`> :
+    X extends UnsignedInfinityString ? PositiveInfinity :
+    X extends NegativeInfinityString ? NegativeInfinity :
+    number
+
+export type Decr<X extends number> = _Decr<`${X}`>
+
+export namespace Decr {
+    export type Int<X extends bigint> = ToBigInt<_DecrIntString10<`${X}`>>
+
+    export type Str<X extends `${number | bigint}`> =
+        X extends `${bigint}` ? _DecrIntString<X> : `${Decr<StrDecimalLiteralToNumber<X>>}`
+
+    export type Hex<X extends string> =
+        X extends `-${infer U}` ?
+            `0x${U}` extends Hexed ? IncrU16<X> : string :
+        `0x${X}` extends Hexed ? DecrU16<X> : string
+
+    export type Oct<X extends string> =
+        X extends `-${infer U}` ?
+            `0o${U}` extends Octed ? IncrU08<X> : string :
+        `0o${X}` extends Octed ? DecrU08<X> : string
+
+    export type Bin<X extends string> =
+        X extends `-${infer U}` ?
+            `0b${U}` extends Bined ? IncrU02<X> : string :
+        `0b${X}` extends Bined ? DecrU02<X> : string
+}
+
+
+type Inc<Prev extends Decr.Str<N> & Int, N extends Int, Next extends Incr.Str<N> & Int> = Is<Decr.Str<N>, Prev> & Is<Incr.Str<N>, Next>
+
+type DecrStrIncrU10<X extends string> = Decr.Str<IncrU10<X>>
+
+0 satisfies Is<IncrU10<'0xg0'>, '0xg1'>
+0 satisfies Is<DecrStrIncrU10<'0xg0'>, `${number}`>
+
 
 /*
 function baseForPrefix(prefix) {
@@ -88,7 +194,20 @@ console.log(results.join('\n'));
 type Tag = {t?: string}
 
 0 satisfies Inc<never, never, never>
-0 satisfies Inc<Int, any, Int>
+0 satisfies Is<Incr<any>, number>
+0 satisfies Is<Decr<any>, number>
+0 satisfies Is<Incr.Int<any>, bigint>
+0 satisfies Is<Decr.Int<any>, bigint>
+0 satisfies Is<Incr.Str<any>, `${number | bigint}`>
+0 satisfies Is<Decr.Str<any>, `${number | bigint}`>
+
+0 satisfies Is<Incr<1e999>, 1e999>
+0 satisfies Is<Decr<1e999>, 1e999>
+0 satisfies Is<Incr<-1e999>, -1e999>
+0 satisfies Is<Decr<-1e999>, -1e999>
+0 satisfies Is<Incr<number>, number>
+0 satisfies Is<Decr<number>, number>
+
 0 satisfies Inc<Int, `${any}`, Int>
 0 satisfies Inc<Int, Int, Int>
 
